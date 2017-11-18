@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>  
+        <link rel="icon" type="image/png" href="icon.PNG" />
+        <link rel="manifest" href="manifest.json">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#607D8B"/>
+        <meta name = "keywords" content = "Simon, game, memory" />
+        <meta name = "description" content = "Simon Game: memorise the pattern to win"/>
+        <meta name = "author" content = "Ala Eddine Sleimi" />
+<title>Simon Game</title>
+<style>
+.NOAI,.NOAI  + label{
+    display: none;
+}
+.click{
+    filter:brightness(150%);
+   
+}
+.Inputs:hover {
+    filter:brightness(110%);
+}
+
+html,body {
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+body{
+    background: #FAFAFA;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    height: 100vh;
+    
+}
+main{
+    position: relative;
+    width: 95vmin;
+    height: 95vmin;
+    margin: 0;
+    padding: 0;
+  
+  
+}
+@keyframes grow {
+    from {
+        transform: scale(0.1) rotate(0deg);
+      
+    }to{
+        transform: scale(1)rotate(-45deg);
+    }
+}
+
+#Input {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    transform: rotate(-45deg);
+    animation: grow 1s;
+    animation-duration: 1s;
+}
+#ui {
+    position: absolute;
+    top: 25%;
+    left: 25%;
+    background: whitesmoke;
+    border-radius: 50%;
+    width: 50%;
+    height: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+#Input :nth-child(1){
+    background: green;
+    border-radius: 100% 0 0 0;
+}
+#Input :nth-child(2){
+   
+    background: #D50000;
+
+    border-radius: 0 100% 0 0;
+}
+#Input :nth-child(3){
+    background: #1A237E;
+    border-radius: 0 0 0 100%;
+}
+#Input :nth-child(4){
+   background: #FFD600;
+    border-radius: 0 0 100% 0;
+}
+.Inputs {
+    padding: 0;
+    margin: 0;
+    width: 50%;
+    height: 50%;
+    display: block!important;
+    cursor: pointer;
+    user-select: none;
+   
+}
+.Inputs:active {
+    filter: brightness(105%);
+}
+
+</style>
+</head>
+<body>
+<main>
+<div id="Input">
+        <div   title="left" onclick="humanMove(0)" class="Inputs"></div>
+        <div   title="up"onclick="humanMove(1)" class="Inputs"></div>
+        <div   title="down" onclick="humanMove(2)" class="Inputs"></div>
+        <div   title="right"onclick="humanMove(3)" class="Inputs"></div>
+</div>
+<div id="ui">
+<div id="turn">press start play</div>
+<div id="counter">0</div>
+<button onclick="start(this)">start</button>
+<span><input id="strict" onchange="Game.strictChange(this)"  type="checkbox"> <label for="strict">strict</label></span>
+<select aria-label="change Game Mode" onchange="changePlayer(this)" >
+    <option value="Computer">Computer VS Player</option>
+    <option value="human"> Player 1 VS Player 2</option>
+</select>
+</div>
+</main>
+<script>
+    "use strict"
+    const Game = {
+          sequence : [],
+          counter : 0,
+          humanTurn : true,
+          AI: true,
+          strict: false,
+          Max: 20,
+          Index: 0, //avoid bugs when reset
+          turn: document.getElementById("turn"),
+          audio: {
+           0: new Audio("https://s3.amazonaws.com/freecodecamp/simonSound1.mp3"),
+           1: new Audio("https://s3.amazonaws.com/freecodecamp/simonSound2.mp3"),
+           2: new Audio("https://s3.amazonaws.com/freecodecamp/simonSound3.mp3"),
+           3: new Audio("https://s3.amazonaws.com/freecodecamp/simonSound4.mp3"),
+           //from http://www.orangefreesounds.com/wrong-answer-sound-effect/
+           lose: new Audio("lose.mp3"),
+           win: new Audio("win.mp3")
+          },
+          Inputs: document.getElementsByClassName("Inputs"),
+          counterBox: document.getElementById("counter"),
+          strictChange: (el)=>{Game.strict = el.checked},
+          
+         
+    }
+    function changePlayer(el){
+       
+        Game.AI = el.value === "Computer";
+        let strict = document.getElementById("strict");
+         
+        if(Game.AI){
+            strict.classList.remove("NOAI");
+        }else strict.classList.add("NOAI");
+        reset();
+        
+    
+    }
+    function reset(){
+        Game.steps = [];
+        Game.counterBox.textContent= 0;
+        Game.humanTurn = false;
+        Game.counter = 0;
+        Game.turn.textContent = "press start to play";
+    }
+    
+    async function humanMove(move){
+       
+      if(Game.humanTurn){
+          if(Game.counter < Game.sequence.length){
+                    if(Game.sequence[Game.counter] === move){
+                        await playSound(move);
+                        ++Game.counter;
+                        if(Game.AI){
+                            if( Game.counter === Game.Max){
+                           
+                             Game.counterBox.textContent = "Win";
+                             playSound("win");
+                            }else if( Game.counter === Game.sequence.length){
+                                Game.counter = 0;
+                                setTimeout(AiMove,800);
+                            } 
+                                             
+
+                        }   
+                     
+                    }else{
+                        
+                        await playSound("lose");
+                        if(Game.AI){
+                            Game.counter = 0;
+                            if(Game.strict) reset();
+                            else{
+                                // avoid concurrency bug
+                                const current = Game.Index;
+                                for(const move of Game.sequence) if(Game.Index === current) playSound(move);
+                            } 
+
+                        }else{
+                                Game.turn.textContent = "Player "+ ( (Game.sequence.length+1)%2 + 1);
+                                Game.counterBox.textContent = "wins";
+                                Game.humanTurn = false;
+                                Game.sequence = [];
+
+                        }
+                    }
+
+          }else if(!Game.AI){
+                    
+                    Game.counter = 0;
+                    Game.sequence.push(move);
+                    Game.counterBox.textContent = Game.sequence.length
+                    Game.turn.textContent = "Player "+ ( (Game.sequence.length)%2 + 1);
+                    await playSound(move);
+
+          }
+
+      }
+        
+    }
+    const start = (el) =>{
+        reset();
+        ++Game.Index;
+        el.textContent = "restart";
+        if(Game.AI){
+            Game.turn.textContent = "Computer";
+            Game.humanTurn = false;
+            AiMove();
+        }else{
+            Game.turn.textContent = "Player 1";
+            Game.humanTurn = true;
+        }
+     }
+   function playSound(a){
+        if(!isNaN(a)) Game.Inputs[a].classList.add("click");
+        
+        
+        Game.audio[a].play();
+        return new Promise((resolve,reject)=>{
+            Game.audio[a].addEventListener("ended", function(){
+            if(!isNaN(a)) Game.Inputs[a].classList.remove("click");
+            resolve();
+      });
+        });
+    
+    }
+    async function AiMove(){
+         const current = Game.Index;
+        for( const move of Game.sequence) if(current===Game.Index) await playSound(move);
+        const move = Math.floor(Math.random()*4);
+        Game.sequence.push(move);
+        Game.counterBox.textContent=Game.sequence.length+"/"+Game.Max;
+        await playSound(move);
+        Game.humanTurn = true;
+        Game.turn.textContent = "You";
+
+
+    }
+        
+    document.body.addEventListener("keydown",(e)=>{
+        switch(e.code){
+            case "ArrowLeft": Game.Inputs[0].click(); break;
+            case "ArrowUp": Game.Inputs[1].click(); break;
+            case "ArrowDown": Game.Inputs[2].click(); break;
+            case "ArrowRight": Game.Inputs[3].click(); break;
+        }
+    },false);
+    
+   
+  
+
+</script>
+ <script>
+        "use strict"
+    if ('serviceWorker' in navigator) {
+ 
+        navigator.serviceWorker.register('service-worker.js')
+          .then(function(reg){
+            console.log("Yes, it did.");
+          }).catch(function(err) {
+            console.log("No it didn't. This happened: ", err)
+          });
+      }
+    </script>
+
+</body>
+
+</html>

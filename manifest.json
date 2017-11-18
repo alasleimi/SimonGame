@@ -1,0 +1,36 @@
+
+   {
+  "name": "SimonGame",
+  "short_name": "Simon",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "description": "Simon Game: memorise the pattern to win",
+  "icons": [
+       {
+    "src": "icon.PNG",
+    "type": "image/png",
+    "sizes": "64x64"
+  
+
+    },
+       {
+    "src": "icon192.png",
+    "type": "image/png",
+    "sizes": "192x192"
+  
+
+    },
+    {
+    "src": "icon512.PNG",
+    "type": "image/png",
+    "sizes": "512x512"
+  
+
+    }],
+"theme_color": "#607D8B"
+ 
+}
+
+
+
